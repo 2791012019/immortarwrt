@@ -1,0 +1,54 @@
+name: Build OpenWrt
+
+on:
+  workflow_dispatch: # 允许手动触发
+  push:
+    branches:
+      - main # 当推送到main分支时触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest # 使用最新的Ubuntu环境
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - name: Clone OpenWrt
+        run: |
+          git clone https://github.com/VIKINGYFY/immortalwrt
+          cd immortalwrt
+
+      - name: Update feeds
+        working-directory: immortalwrt
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Load custom .config
+        run: |
+          cp .config immortalwrt/.config # 将你的.config复制到OpenWrt源码目录
+
+      - name: Download all packages
+        working-directory: immortalwrt
+        run: |
+          make download -j4$(nproc)
+
+      - name: Compile OpenWrt
+        working-directory: immortalwrt
+        run: |
+          echo "Starting compilation..."
+          make -j$(nproc) V=2
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenWrt_Firmware
+          path: immortalwrt/bin/targets/qualcommax/ipq807x
