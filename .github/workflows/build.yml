@@ -45,7 +45,7 @@ jobs:
         working-directory: immortalwrt
         run: |
           echo "Starting compilation..."
-          make -j$(nproc) V=2
+          make -j$(nproc) V=s
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
